@@ -7,20 +7,20 @@ URL shortener microservice based on Node.js/Express/MongoDB
 
 Example usage:
 ```
-https://little-url.herokuapp.com/new/https://www.google.com
+https://blooming-castle-13896.herokuapp.com/https://www.google.com
 
-https://little-url.herokuapp.com/new/http://foo.com:80
+https://blooming-castle-13896.herokuapp.com/http://foo.com:80
 
 ```
 
 Example output:
 ```
-{ "original_url":"http://foo.com:80", "short_url":"https://little-url.herokuapp.com/8170" }
+{ "original_url":"http://foo.com:80", "short_url":"https://blooming-castle-13896.herokuapp.com/4711" }
 ```
 
 Usage
 ```
-https://little-url.herokuapp.com/8170
+https://blooming-castle-13896.herokuapp.com/4711
 ```
 
 Will redirect to
