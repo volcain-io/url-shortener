@@ -7,7 +7,7 @@ const app = express()
 const MongoClient = mongodb.MongoClient;
 
 const port = process.env.PORT || 8080
-const dbURL = 'mongodb://localhost:27017/url_shortener';
+const dbURL = process.env.MONGOLAB_URI
 var dbCollection
 
 // Use connect method to connect to the Server
