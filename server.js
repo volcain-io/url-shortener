@@ -1,48 +1,88 @@
 const express = require('express')
 const path = require('path')
+const mongodb = require('mongodb');
 const validURL = require('valid-url')
+
 const app = express()
+const MongoClient = mongodb.MongoClient;
 
-var port = process.env.PORT || 8080
+const port = process.env.PORT || 8080
+const dbURL = 'mongodb://localhost:27017/url_shortener';
+var dbCollection
 
-function parseQuery(query) {
-    var result = false;
-    var isNumeric = /^(\d+)$/g
+// Use connect method to connect to the Server
+const db = MongoClient.connect(dbURL, function(err, db) {
+    if ( err )
+        throw err
 
-    if ( isNumeric.exec(query) !== null ) {
-        // is numeric
-    } else if ( validURL.isUri(query) ) {
-        // is a valid url
-    }
+    dbCollection = db.collection('short_url')
 
-    return result;
+});
+
+function getRandomInt() {
+  const min = Math.ceil(1000);
+  const max = Math.floor(1501);
+  return Math.floor(Math.random() * (max - min)) + min;
 }
 
 app.get('/', function(req, res) {
     res.sendFile( path.join(__dirname + '/views/index.html') )
 })
 
-app.get('/:url', function(request, response) {
-    const url = request.params.url;
+app.get('/:param*', function(request, response) {
+    var param = request.url.slice(1);
+    var isNumeric = /^(\d+)$/g
 
-    var result = {
-        original_url: null,
-        short_url: null
-    }
-
-    var error = {
-        message: "Invalid URL: " + request.params.url
-    }
-
-    var parsedURL = parseQuery(url)
-    if ( parsedURL ) {
-        
+    if ( validURL.isUri(param) ) {
+        dbCollection.find( { original_url: param } ).toArray(function(err, data) {
+            if ( err ) {
+                console.error(err)
+                response.json( { 'message': "Couldn't insert into database" } )
+            } else {
+                if ( data.length === 0 ) {
+                    var randomInt = getRandomInt()
+                    dbCollection.update(
+                        {
+                            url_id: randomInt
+                        },
+                        {
+                            url_id: randomInt,
+                            original_url: param
+                        },
+                        {
+                            'upsert': true
+                        },
+                        function(err, data) {
+                            if ( err ) {
+                                console.error(err)
+                                response.json( { 'message': "Couldn't insert into database" } )
+                            } else {
+                                response.json( { 'original_url': param, 'short_url': 'https://blooming-castle-13896.herokuapp.com/' + randomInt } )
+                            }
+                        }
+                    )
+                } else {
+                    response.json( { 'original_url': param, 'short_url': 'https://blooming-castle-13896.herokuapp.com/' + data[0].url_id } )
+                }
+            }
+        })
     } else {
-        result = error;
+        if ( isNumeric.exec(param) === null ) {
+            response.json( { 'message': "Invalid parameter '" + param + "'" } )
+        } else {
+            dbCollection.find( { url_id: parseInt(param) } ).toArray(function(err, data) {
+                if ( err ) {
+                    console.error(err)
+                    response.json( { 'message': 'URL not in database' } )
+                } else {
+                    if ( data.length === 0 )
+                        response.json( { 'message': 'URL not in database' } )
+                    else
+                        response.redirect( data[0].original_url )
+                }
+            })
+        }
     }
-
-    response.setHeader('Content-Type', 'application/json');
-    response.send( JSON.stringify(result) )
 })
 
 app.listen(port)
